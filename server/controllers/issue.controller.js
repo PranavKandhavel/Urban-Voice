@@ -5,25 +5,28 @@ const createIssue = async (req, res) => {
   const { title, description, category, latitude, longitude, address } = req.body
 
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'Photo is required' })
-    }
+    const photo = req.file ? {
+      url: req.file.path,
+      publicId: req.file.filename
+    } : {
+      url: "https://via.placeholder.com/400x300/2ECC71/ffffff?text=No+Photo",
+      publicId: "no-photo"
+    };
 
-    const issue = await Issue.create({
-      title,
-      description,
-      category,
-      photo: {
-        url: req.file.path,
-        publicId: req.file.filename
-      },
+    const issueData = {
+      title: title.trim(),
+      description: description || '',
+      category: category || 'Other',
       location: {
         type: 'Point',
         coordinates: [parseFloat(longitude), parseFloat(latitude)],
-        address
+        address: address || 'Coimbatore'
       },
-      reportedBy: req.user._id
-    })
+      reportedBy: req.user._id,
+      photo: photo
+    };
+
+    const issue = await Issue.create(issueData)
 
     res.status(201).json(issue)
   } catch (error) {

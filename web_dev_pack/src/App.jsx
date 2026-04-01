@@ -1,26 +1,47 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import "./App.css";
+
 import Signup from "./components/signup";
 import Login from "./components/login";
 import Dashboard from "./components/Dashboard";
 import ReportIssue from "./components/ReportIssue";
-import MyComplaints from "./components/MyComplaints";
+
+import Complaints from "./components/Complaints";
+
+
+import { useState, useEffect } from "react";
 
 function PrivateRoute({ children }) {
-  const user = localStorage.getItem("loggedInUser");
-  return user ? children : <Navigate to="/login" />;
+  const [isAuth, setIsAuth] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsAuth(!!token);
+    setLoading(false);
+  }, []);
+
+  if (loading) return <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}>Loading...</div>;
+  return isAuth ? children : <Navigate to="/login" replace />;
 }
+
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-        <Route path="/report" element={<PrivateRoute><ReportIssue /></PrivateRoute>} />
-        <Route path="/my-complaints" element={<PrivateRoute><MyComplaints /></PrivateRoute>} />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/report" element={<PrivateRoute><ReportIssue /></PrivateRoute>} />
+
+        <Route path="/my-complaints" element={<PrivateRoute><Complaints /></PrivateRoute>} />
+
+        </Routes>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

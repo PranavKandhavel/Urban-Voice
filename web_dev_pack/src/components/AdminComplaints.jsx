@@ -17,44 +17,59 @@ const STATUS_CONFIG = {
   "Resolved":    { color: "#2ECC71", bg: "rgba(46,204,113,0.12)" },
 };
 
-export default function MyComplaints() {
+export default function AdminComplaints() {
   const navigate = useNavigate();
   const [complaints, setComplaints] = useState([]);
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState({});
 
   useEffect(() => {
-const fetchMyComplaints = async () => {
-    try {
-      const res = await API.get("/api/issues/my");
-      setComplaints(res.data.map(issue => ({
-        id: issue._id,
-        title: issue.title,
-        type: (issue.category || "road").toLowerCase(),
-        location: issue.location?.address || "Unknown location",
-        status: issue.status,
-        time: new Date(issue.createdAt).toLocaleString(),
-        description: issue.description,
-        userName: issue.reportedBy?.name || 'You'
-      })));
-    } catch (err) {
-      console.error("Failed to load complaints", err);
-      setComplaints([]);
-    }
-  };
-  fetchMyComplaints();
-}, []);
+    const fetchComplaints = async () => {
+      try {
+        const res = await API.get("/api/issues");
+        setComplaints(res.data.map(issue => ({
+          id: issue._id,
+          title: issue.title,
+          type: (issue.category || "road").toLowerCase(),
+          location: issue.location?.address || "Unknown",
+          status: issue.status || "Pending",
+          time: new Date(issue.createdAt).toLocaleString(),
+          description: issue.description,
+          reportedBy: issue.reportedBy?.name || 'Anonymous',
+          upvoteCount: issue.upvoteCount || 0,
+        })));
+      } catch (err) {
+        console.error("Failed to load complaints", err);
+        setComplaints([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchComplaints();
+  }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("loggedInUser");
     navigate("/login");
   };
 
-  const handleDelete = (id) => {
-    const updated = complaints.filter(c => c.id !== id);
-    setComplaints(updated);
-    localStorage.setItem("complaints", JSON.stringify([...updated].reverse()));
-    if (selected && selected.id === id) setSelected(null);
+  const updateStatus = async (id, newStatus) => {
+    try {
+      setUpdating(prev => ({ ...prev, [id]: true }));
+
+      await API.patch(`/api/status/${id}`, { status: newStatus });
+
+      setComplaints(complaints.map(c => c.id === id ? { ...c, status: newStatus } : c));
+      if (selected && selected.id === id) setSelected({ ...selected, status: newStatus });
+      alert(`Status updated to ${newStatus}`);
+    } catch (err) {
+      alert("Failed to update status");
+    } finally {
+      setUpdating(prev => ({ ...prev, [id]: false }));
+    }
   };
 
   const filters = ["All", "Pending", "In Progress", "Resolved"];
@@ -71,7 +86,6 @@ const fetchMyComplaints = async () => {
       <Sidebar onLogout={handleLogout} />
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-
         {/* List panel */}
         <div style={{
           width: selected ? 380 : "100%",
@@ -87,22 +101,9 @@ const fetchMyComplaints = async () => {
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
               <div>
-                <div style={{ color: "#e8eaf0", fontSize: 24, fontWeight: 800, letterSpacing: 0.5 }}>My Complaints</div>
-                <div style={{ color: "#3a4560", fontSize: 12, marginTop: 2 }}>Track all your submitted issues</div>
+                <div style={{ color: "#e8eaf0", fontSize: 24, fontWeight: 800, letterSpacing: 0.5 }}>All Complaints</div>
+                <div style={{ color: "#3a4560", fontSize: 12, marginTop: 2 }}>Manage & Update Issue Status</div>
               </div>
-              <button
-                onClick={() => navigate("/report")}
-                style={{
-                  padding: "8px 16px",
-                  background: "linear-gradient(135deg, #2ECC71, #27ae60)",
-                  border: "none", borderRadius: 8,
-                  color: "#060e1c", fontWeight: 800, fontSize: 12,
-                  cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 6,
-                }}
-              >
-                <span>+</span> New Report
-              </button>
             </div>
 
             {/* Mini stats */}
@@ -147,32 +148,15 @@ const fetchMyComplaints = async () => {
 
           {/* Complaints list */}
           <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px" }}>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div style={{ textAlign: "center", color: "#3a4560", padding: 40 }}>Loading complaints...</div>
+            ) : filtered.length === 0 ? (
               <div style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
                 justifyContent: "center", height: "100%", gap: 12,
               }}>
                 <div style={{ fontSize: 48 }}>📭</div>
-                <div style={{ color: "#3a4560", fontSize: 15, fontWeight: 600 }}>No complaints found</div>
-                <div style={{ color: "#2a3550", fontSize: 12, textAlign: "center" }}>
-                  {filter === "All"
-                    ? "You haven't reported any issues yet."
-                    : `No ${filter.toLowerCase()} complaints.`
-                  }
-                </div>
-                {filter === "All" && (
-                  <button
-                    onClick={() => navigate("/report")}
-                    style={{
-                      padding: "8px 20px", borderRadius: 8,
-                      background: "rgba(46,204,113,0.15)",
-                      border: "1px solid rgba(46,204,113,0.3)",
-                      color: "#2ECC71", fontWeight: 700, cursor: "pointer", fontSize: 12,
-                    }}
-                  >
-                    Report an Issue
-                  </button>
-                )}
+                <div style={{ color: "#3a4560", fontSize: 15, fontWeight: 600 }}>No complaints</div>
               </div>
             ) : (
               filtered.map((c, i) => {
@@ -191,11 +175,7 @@ const fetchMyComplaints = async () => {
                       border: isActive ? "1px solid rgba(46,204,113,0.2)" : "1px solid rgba(255,255,255,0.06)",
                       cursor: "pointer",
                       transition: "all 0.2s",
-                      animation: "slideIn 0.3s ease",
-                      animationDelay: i * 0.05 + "s",
                     }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flex: 1 }}>
@@ -213,16 +193,19 @@ const fetchMyComplaints = async () => {
                             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {c.title || "Untitled Issue"}
                           </div>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
                             <span style={{ color: typeCfg.color, fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}>
                               {typeCfg.label}
                             </span>
                             <span style={{ color: "#2a3550" }}>·</span>
                             <span style={{ color: "#4a5568", fontSize: 11 }}>📍 {c.location}</span>
                           </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ color: "#7a8399", fontSize: 11 }}>👍 {c.upvoteCount || 0}</span>
+                          </div>
                         </div>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0, marginLeft: 10 }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                         <span style={{
                           padding: "3px 8px", borderRadius: 20,
                           background: statusCfg.bg,
@@ -278,23 +261,36 @@ const fetchMyComplaints = async () => {
                     </div>
                   </div>
 
-                  {/* Status */}
-                  <span style={{
-                    display: "inline-block",
-                    padding: "5px 14px", borderRadius: 20,
-                    background: statusCfg.bg, color: statusCfg.color,
-                    fontSize: 12, fontWeight: 700, marginBottom: 20,
-                  }}>
-                    {selected.status}
-                  </span>
+                  {/* Status dropdown */}
+                  <div style={{ marginBottom: 24 }}>
+                    <label style={{ display: "block", color: "#5a6a88", fontSize: 11, marginBottom: 8, fontWeight: 600 }}>Update Status</label>
+                    {["Pending", "In Progress", "Resolved"].map(status => (
+                      <button
+                        key={status}
+                        onClick={() => updateStatus(selected.id, status)}
+                        disabled={updating[selected.id] || selected.status === status}
+                        style={{
+                          display: "inline-block", margin: "4px 8px 4px 0",
+                          padding: "6px 12px", borderRadius: 6,
+                          background: statusCfg.bg,
+                          border: `2px solid ${statusCfg.color}`,
+                          color: statusCfg.color,
+                          fontSize: 12, fontWeight: 600, cursor: "pointer",
+                          opacity: selected.status === status ? 0.6 : 1,
+                        }}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
 
                   {/* Info grid */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
                     {[
                       { label: "Location", value: selected.location, icon: "📍" },
                       { label: "Reported", value: selected.time, icon: "🕐" },
-                      { label: "Reported by", value: selected.userName || "You", icon: "👤" },
-                      { label: "Issue ID", value: "#" + String(selected.id).slice(-5), icon: "🔖" },
+                      { label: "Reported by", value: selected.reportedBy || "Anonymous", icon: "👤" },
+                      { label: "Upvotes", value: selected.upvoteCount || 0, icon: "👍" },
                     ].map(info => (
                       <div key={info.label} style={{
                         padding: "12px 14px",
@@ -303,7 +299,7 @@ const fetchMyComplaints = async () => {
                         borderRadius: 10,
                       }}>
                         <div style={{ color: "#3a4560", fontSize: 10, letterSpacing: 0.5, marginBottom: 4 }}>{info.icon} {info.label}</div>
-                        <div style={{ color: "#c8d0e0", fontSize: 13, fontWeight: 600 }}>{info.value || "—"}</div>
+                        <div style={{ color: "#c8d0e0", fontSize: 13, fontWeight: 600 }}>{info.value || "—" }</div>
                       </div>
                     ))}
                   </div>
@@ -320,63 +316,21 @@ const fetchMyComplaints = async () => {
                       <div style={{ color: "#c8d0e0", fontSize: 13, lineHeight: 1.6 }}>{selected.description}</div>
                     </div>
                   )}
-
-                  {/* Progress steps */}
-                  <div style={{ marginBottom: 24 }}>
-                    <div style={{ color: "#5a6a88", fontSize: 11, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>Progress</div>
-                    {[
-                      { step: "Submitted", done: true },
-                      { step: "Under Review", done: selected.status !== "Pending" },
-                      { step: "In Progress", done: selected.status === "Resolved" },
-                      { step: "Resolved", done: selected.status === "Resolved" },
-                    ].map((s, i) => (
-                      <div key={i} style={{ display: "flex", gap: 12, marginBottom: 8, alignItems: "center" }}>
-                        <div style={{
-                          width: 22, height: 22, borderRadius: "50%",
-                          background: s.done ? "#2ECC71" : "rgba(255,255,255,0.06)",
-                          border: "2px solid " + (s.done ? "#2ECC71" : "rgba(255,255,255,0.1)"),
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          flexShrink: 0,
-                          fontSize: 11, color: "#060e1c", fontWeight: 800,
-                        }}>
-                          {s.done ? "✓" : ""}
-                        </div>
-                        <span style={{ color: s.done ? "#c8d0e0" : "#3a4560", fontSize: 13 }}>{s.step}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => handleDelete(selected.id)}
-                    style={{
-                      width: "100%", padding: "11px",
-                      background: "rgba(231,76,60,0.08)",
-                      border: "1px solid rgba(231,76,60,0.2)",
-                      borderRadius: 8, color: "#E74C3C",
-                      fontWeight: 700, fontSize: 13, cursor: "pointer",
-                      transition: "background 0.2s",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(231,76,60,0.15)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "rgba(231,76,60,0.08)"}
-                  >
-                    🗑️ Delete Complaint
-                  </button>
                 </>
               );
             })()}
           </div>
         )}
-      </div>
 
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@700;800&display=swap');
-        @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: rgba(46,204,113,0.2); border-radius: 4px; }
-      `}</style>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@700;800&display=swap');
+          @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+          * { box-sizing: border-box; }
+          ::-webkit-scrollbar { width: 4px; }
+          ::-webkit-scrollbar-thumb { background: rgba(46,204,113,0.2); border-radius: 4px; }
+        `}</style>
+      </div>
     </div>
   );
 }

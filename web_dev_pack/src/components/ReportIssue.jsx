@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
+import API from "../api";
 
 const ISSUE_TYPES = [
   { value: "road",        label: "Road Damage",   icon: "🛣️", color: "#E74C3C" },
@@ -36,22 +37,42 @@ export default function ReportIssue() {
     return e;
   };
 
-  const handleSubmit = () => {
-    const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
-    const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
-    const complaints = JSON.parse(localStorage.getItem("complaints") || "[]");
-    complaints.push({
-      ...form,
-      id: Date.now(),
-      status: "Pending",
-      time: new Date().toLocaleString(),
-      userName: user.name || "Unknown",
-      pin: pinPlaced,
+  const handleSubmit = async () => {
+  const e = validate();
+  if (Object.keys(e).length) {
+    setErrors(e);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("title", form.title.trim());
+  formData.append("description", form.description || "");
+  formData.append("category", form.type === "road" ? "Roads" : 
+    form.type === "water" ? "Water" : 
+    form.type === "garbage" ? "Garbage" : 
+    form.type === "streetlight" ? "Streetlight" : "Other");
+  formData.append("address", form.location.trim());
+  
+  // Generate coords for Coimbatore area from pin (lat ~10.99, long ~76.96)
+  const lat = 10.99 + (pinPlaced.y / 1000);
+  const lng = 76.96 + (pinPlaced.x / 1000);
+  formData.append("latitude", lat);
+  formData.append("longitude", lng);
+
+  if (form.image) {
+    formData.append("photo", form.image);
+  }
+
+  try {
+    await API.post("/api/issues", formData, {
+      headers: { "Content-Type": "multipart/form-data" }
     });
-    localStorage.setItem("complaints", JSON.stringify(complaints));
+
     setSubmitted(true);
-  };
+  } catch (err) {
+    alert(err.response?.data?.message || "Failed to submit issue");
+  }
+};
 
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");

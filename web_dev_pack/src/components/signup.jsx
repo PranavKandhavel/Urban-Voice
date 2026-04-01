@@ -1,51 +1,42 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import API from "../api";
 import bg from "../assets/login_image.jpg";
 
 function Signup() {
   const navigate = useNavigate();
-
-  const [data, setData] = useState({
-    name: "",
-    email: "",
-    password: ""
-  });
-
+  const [data, setData] = useState({ name: "", email: "", phone: "", password: "" });
+  const [loading, setLoading] = useState(false);
   const [hover, setHover] = useState(false);
 
   const handleChange = (e) => {
     setData({ ...data, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    const name = data.name.trim();
-    const email = data.email.trim().toLowerCase();
-    const password = data.password.trim();
+  try {
+    const res = await API.post("/api/auth/register", {
+      name: data.name.trim(),
+      email: data.email.trim().toLowerCase(),
+      phone: data.phone.trim(),
+      password: data.password.trim()
+    });
 
-    if (!name || !email || !password) {
-      alert("Enter all the values");
-      return;
-    }
+    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("loggedInUser", JSON.stringify(res.data.user || res.data));
 
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-
-    const exists = users.some(
-      user => user.email.toLowerCase() === email
-    );
-
-    if (exists) {
-      alert("Email already exists");
-      return;
-    }
-
-    users.push({ name, email, password });
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("loggedInUser", JSON.stringify({ name, email, password }));
-
+    alert("Account created successfully!");
     navigate("/dashboard");
-  };
+
+  } catch (err) {
+    alert(err.response?.data?.message || "Signup failed. Try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div
@@ -59,7 +50,6 @@ function Signup() {
       }}
       className="d-flex justify-content-center align-items-center"
     >
-
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
@@ -78,7 +68,6 @@ function Signup() {
           transition: "all 0.5s"
         }}
       >
-
         <div style={{
           width: "390px",
           height: "390px",
@@ -92,68 +81,45 @@ function Signup() {
           color: "white",
           padding: "30px"
         }}>
-
           <h3 className="mb-3">Urban Voice</h3>
           <h5 className="mb-3">Signup</h5>
 
           <form onSubmit={handleSubmit} style={{ width: "80%" }}>
-
             <input
               type="text"
               name="name"
               placeholder="Name"
               className="form-control mb-2"
               onChange={handleChange}
-              onFocus={(e) => {
-                e.target.style.transform = "scale(1.05)";
-                e.target.style.boxShadow =
-                  "0px 0px 20px #00f2fe, 0px 0px 40px #4facfe";
-              }}
-              onBlur={(e) => {
-                e.target.style.transform = "scale(1)";
-                e.target.style.boxShadow = "none";
-              }}
-              style={{ transition: "all 0.3s ease" }}
+              required
             />
-
             <input
               type="email"
               name="email"
               placeholder="Email"
               className="form-control mb-2"
               onChange={handleChange}
-              onFocus={(e) => {
-                e.target.style.transform = "scale(1.05)";
-                e.target.style.boxShadow =
-                  "0px 0px 20px #00f2fe, 0px 0px 40px #4facfe";
-              }}
-              onBlur={(e) => {
-                e.target.style.transform = "scale(1)";
-                e.target.style.boxShadow = "none";
-              }}
-              style={{ transition: "all 0.3s ease" }}
+              required
             />
-
+            <input
+              type="tel"
+              name="phone"
+              placeholder="Phone Number"
+              className="form-control mb-2"
+              onChange={handleChange}
+              required
+            />
             <input
               type="password"
               name="password"
               placeholder="Password"
               className="form-control mb-3"
               onChange={handleChange}
-              onFocus={(e) => {
-                e.target.style.transform = "scale(1.05)";
-                e.target.style.boxShadow =
-                  "0px 0px 20px #00f2fe, 0px 0px 40px #4facfe";
-              }}
-              onBlur={(e) => {
-                e.target.style.transform = "scale(1)";
-                e.target.style.boxShadow = "none";
-              }}
-              style={{ transition: "all 0.3s ease" }}
+              required
             />
-
             <button
               className="btn w-100"
+              disabled={loading}
               style={{
                 background: "linear-gradient(90deg,#4facfe,#00f2fe)",
                 border: "none",
@@ -161,9 +127,8 @@ function Signup() {
                 fontWeight: "bold"
               }}
             >
-              SIGNUP
+              {loading ? "Creating account..." : "SIGNUP"}
             </button>
-
           </form>
 
           <p className="mt-2" style={{ fontSize: "14px" }}>
@@ -172,10 +137,8 @@ function Signup() {
               Login
             </Link>
           </p>
-
         </div>
       </div>
-
     </div>
   );
 }
