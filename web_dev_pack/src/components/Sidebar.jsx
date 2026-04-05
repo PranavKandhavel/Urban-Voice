@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const NAV = [
-  { icon: "📍", label: "Nearby Issues",  path: "/dashboard" },
-  { icon: "📝", label: "Report Issue",   path: "/report" },
-  { icon: "📊", label: "My Complaints",  path: "/my-complaints" },
-  { icon: "⚙️", label: "Settings",       path: "/settings" },
-];
-
 export default function Sidebar({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  
+  const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+  const role = user.role || "citizen";
+
+  const NAV = [
+    { icon: "📍", label: "Nearby Issues",  path: "/dashboard" },
+    ...(role !== "authority" ? [{ icon: "📝", label: "Report Issue", path: "/report" }] : []),
+    { icon: role === "authority" ? "📋" : "📊", label: role === "authority" ? "Manage Complaints" : "My Complaints",  path: "/my-complaints" },
+    { icon: "⚙️", label: "Settings",       path: "/settings" },
+  ];
 
   return (
     <div style={{
@@ -132,7 +135,7 @@ export default function Sidebar({ onLogout }) {
       {/* Logout */}
       <div style={{ padding: collapsed ? "16px 0" : "16px 20px", display: "flex", justifyContent: collapsed ? "center" : "flex-start" }}>
         <button
-          onClick={onLogout}
+          onClick={() => confirm("Are you sure you want to log out?") && onLogout()}
           style={{
             background: "rgba(231,76,60,0.1)",
             border: "1px solid rgba(231,76,60,0.2)",

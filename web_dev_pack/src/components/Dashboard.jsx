@@ -1,19 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
-import IssuePin from "./IssuePin";
 import UpvoteButton from "./UpvoteButton";
 import API from "../api";
+import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 
 const DEMO_ISSUES = [
-  { id: 1, type: "garbage",     title: "Overflowing bin",      location: "Gandhipuram",  time: "2 hrs ago",  x: 22, y: 30, upvoteCount: 0 },
-  { id: 2, type: "water",       title: "Water leakage",        location: "Peelamedu",    time: "4 hrs ago",  x: 45, y: 48, upvoteCount: 0 },
-  { id: 3, type: "road",        title: "Pothole on main road", location: "RS Puram",     time: "1 hr ago",   x: 62, y: 28, upvoteCount: 0 },
-  { id: 4, type: "streetlight", title: "Light not working",    location: "Saibaba Colony",time: "6 hrs ago", x: 35, y: 65, upvoteCount: 0 },
-  { id: 5, type: "traffic",     title: "Signal malfunction",   location: "Hopes College", time: "30 min ago", x: 72, y: 58, upvoteCount: 0 },
-  { id: 6, type: "garbage",     title: "Roadside dumping",     location: "Singanallur",  time: "3 hrs ago",  x: 55, y: 75, upvoteCount: 0 },
-  { id: 7, type: "road",        title: "Road crack",           location: "Race Course",  time: "5 hrs ago",  x: 80, y: 40, upvoteCount: 0 },
-  { id: 8, type: "water",       title: "Burst pipe",           location: "Ukkadam",      time: "1 hr ago",   x: 28, y: 55, upvoteCount: 0 },
+  { id: 1, type: "garbage",     title: "Overflowing bin",      location: "Gandhipuram",  time: "2 hrs ago",  lat: 11.0188, lng: 76.9668, upvoteCount: 0 },
+  { id: 2, type: "water",       title: "Water leakage",        location: "Peelamedu",    time: "4 hrs ago",  lat: 11.0268, lng: 77.0068, upvoteCount: 0 },
+  { id: 3, type: "road",        title: "Pothole on main road", location: "RS Puram",     time: "1 hr ago",   lat: 11.0068, lng: 76.9458, upvoteCount: 0 },
+  { id: 4, type: "streetlight", title: "Light not working",    location: "Saibaba Colony",time: "6 hrs ago", lat: 11.0368, lng: 76.9468, upvoteCount: 0 },
+  { id: 5, type: "traffic",     title: "Signal malfunction",   location: "Hopes College", time: "30 min ago", lat: 11.0288, lng: 77.0168, upvoteCount: 0 },
+  { id: 6, type: "garbage",     title: "Roadside dumping",     location: "Singanallur",  time: "3 hrs ago",  lat: 10.9968, lng: 77.0268, upvoteCount: 0 },
+  { id: 7, type: "road",        title: "Road crack",           location: "Race Course",  time: "5 hrs ago",  lat: 10.9968, lng: 76.9768, upvoteCount: 0 },
+  { id: 8, type: "water",       title: "Burst pipe",           location: "Ukkadam",      time: "1 hr ago",   lat: 10.9918, lng: 76.9568, upvoteCount: 0 },
 ];
 
 const LIVE_FEED = [
@@ -24,9 +25,12 @@ const LIVE_FEED = [
   { type: "traffic",     text: "Traffic signal fault",      location: "Hopes College" },
 ];
 
-const TYPE_COLORS = {
-  garbage: "#2ECC71", water: "#3498DB", road: "#E74C3C",
-  streetlight: "#F1C40F", traffic: "#E67E22",
+const TYPE_CONFIG = {
+  garbage:     { color: "#2ECC71", icon: "🗑️", label: "Garbage" },
+  water:       { color: "#3498DB", icon: "🚰", label: "Water Leakage" },
+  road:        { color: "#E74C3C", icon: "🛣️", label: "Road Damage" },
+  streetlight: { color: "#F1C40F", icon: "💡", label: "Streetlight" },
+  traffic:     { color: "#E67E22", icon: "🚦", label: "Traffic" },
 };
 
 export default function Dashboard() {
@@ -58,28 +62,29 @@ export default function Dashboard() {
           id: issue._id,                    // Important: using _id as id
           type: (issue.category || issue.type || "road").toLowerCase(),
           title: issue.title,
+          status: issue.status || "Pending",
           location: issue.location?.address || issue.location || "Unknown",
           upvoteCount: issue.upvoteCount || 0,
           userUpvoted: issue.userUpvoted || false,   // Added for upvote state
           time: new Date(issue.createdAt || Date.now()).toLocaleString(),
-          x: 20 + Math.random() * 60,
-          y: 20 + Math.random() * 60,
+          lat: issue.location?.coordinates?.[1] || (11.0168 + (Math.random() - 0.5) * 0.05),
+          lng: issue.location?.coordinates?.[0] || (76.9558 + (Math.random() - 0.5) * 0.05),
         }));
 
         setAllIssues(issues.length > 0 ? issues : DEMO_ISSUES);
 
         setStats({
-          total: issues.length || DEMO_ISSUES.length,
-          resolved: Math.floor((issues.length || DEMO_ISSUES.length) * 0.4),
-          pending: Math.ceil((issues.length || DEMO_ISSUES.length) * 0.6),
+          total: issues.length > 0 ? issues.length : DEMO_ISSUES.length,
+          resolved: issues.length > 0 ? issues.filter(i => i.status === "Resolved").length : 0,
+          pending: issues.length > 0 ? issues.filter(i => i.status === "Pending").length : DEMO_ISSUES.length,
         });
       } catch (err) {
         console.error("Failed to load issues from backend:", err);
         setAllIssues(DEMO_ISSUES);
         setStats({
           total: DEMO_ISSUES.length,
-          resolved: Math.floor(DEMO_ISSUES.length * 0.4),
-          pending: Math.ceil(DEMO_ISSUES.length * 0.6),
+          resolved: 0,
+          pending: DEMO_ISSUES.length,
         });
       } finally {
         setLoading(false);
@@ -116,42 +121,37 @@ export default function Dashboard() {
       {/* Main map area */}
       <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
 
-        {/* Map grid background + Road lines + Green patches (unchanged) */}
-        <div style={{
-          position: "absolute", inset: 0,
-          backgroundImage: `
-            linear-gradient(rgba(46,204,113,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(46,204,113,0.04) 1px, transparent 1px),
-            linear-gradient(rgba(52,152,219,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(52,152,219,0.02) 1px, transparent 1px)
-          `,
-          backgroundSize: "80px 80px, 80px 80px, 20px 20px, 20px 20px",
-        }} />
-
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
-          <line x1="0" y1="35%" x2="100%" y2="35%" stroke="rgba(127,140,141,0.15)" strokeWidth="12" />
-          <line x1="0" y1="65%" x2="100%" y2="65%" stroke="rgba(127,140,141,0.1)" strokeWidth="8" />
-          <line x1="30%" y1="0" x2="30%" y2="100%" stroke="rgba(127,140,141,0.12)" strokeWidth="10" />
-          <line x1="65%" y1="0" x2="65%" y2="100%" stroke="rgba(127,140,141,0.08)" strokeWidth="6" />
-          <line x1="15%" y1="0" x2="50%" y2="100%" stroke="rgba(127,140,141,0.06)" strokeWidth="6" />
-          <line x1="70%" y1="0" x2="90%" y2="100%" stroke="rgba(127,140,141,0.05)" strokeWidth="4" />
-          <line x1="0" y1="35%" x2="100%" y2="35%" stroke="rgba(255,255,255,0.04)" strokeWidth="1" strokeDasharray="30 20" />
-          <line x1="30%" y1="0" x2="30%" y2="100%" stroke="rgba(255,255,255,0.04)" strokeWidth="1" strokeDasharray="30 20" />
-        </svg>
-
-        <div style={{ position: "absolute", left: "47%", top: "40%", width: 120, height: 80, background: "rgba(46,204,113,0.06)", borderRadius: 8, border: "1px solid rgba(46,204,113,0.08)" }} />
-        <div style={{ position: "absolute", left: "14%", top: "55%", width: 90, height: 60, background: "rgba(46,204,113,0.05)", borderRadius: 8 }} />
-
-        {/* Issue pins */}
-        {filtered.map(issue => (
-          <IssuePin
-            key={issue.id}
-            {...issue}
-            issueId={issue.id}
-            onUpvoteToggle={updateIssueUpvote}
-            onClick={setSelectedPin}
+        {/* React Leaflet MapContainer */}
+        <MapContainer 
+          center={[11.0168, 76.9558]} 
+          zoom={13} 
+          style={{ position: 'absolute', inset: 0, zIndex: 10, width: '100%', height: '100%' }}
+          zoomControl={false}
+        >
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; OpenStreetMap contributors & CartoDB'
           />
-        ))}
+          {filtered.map(issue => {
+            const cfg = TYPE_CONFIG[issue.type] || TYPE_CONFIG.road;
+            return (
+              <CircleMarker
+                key={issue.id}
+                center={[issue.lat, issue.lng]}
+                radius={10}
+                pathOptions={{ color: cfg.color, fillColor: cfg.color, fillOpacity: 0.8, weight: 3 }}
+                eventHandlers={{ click: () => {
+                  setSelectedPin({ ...issue, cfg });
+                }}}
+              >
+                <Tooltip direction="top" opacity={1} offset={[0, -10]}>
+                  <div style={{ color: '#000', fontWeight: 'bold' }}>{cfg.icon} {" " + issue.title}</div>
+                  <div style={{ fontSize: '10px' }}>{issue.location}</div>
+                </Tooltip>
+              </CircleMarker>
+            );
+          })}
+        </MapContainer>
 
         {/* Top bar, Stats bar, Live Feed, Floating buttons (unchanged) */}
         <div style={{
@@ -176,10 +176,11 @@ export default function Dashboard() {
                 onClick={() => setFilterType(t)}
                 style={{
                   padding: "5px 12px", borderRadius: 20,
-                  border: filterType === t ? "1px solid " + (TYPE_COLORS[t] || "#2ECC71") : "1px solid rgba(255,255,255,0.08)",
-                  background: filterType === t ? (TYPE_COLORS[t] || "#2ECC71") + "22" : "rgba(255,255,255,0.03)",
-                  color: filterType === t ? (TYPE_COLORS[t] || "#2ECC71") : "#4a5568",
-                  fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize"
+                  border: filterType === t ? "1px solid " + (TYPE_CONFIG[t]?.color || "#2ECC71") : "1px solid rgba(255,255,255,0.08)",
+                  background: filterType === t ? (TYPE_CONFIG[t]?.color || "#2ECC71") + "22" : "rgba(255,255,255,0.03)",
+                  color: filterType === t ? (TYPE_CONFIG[t]?.color || "#2ECC71") : "#4a5568",
+                  fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize",
+                  position: "relative", zIndex: 1000
                 }}
               >
                 {t === "all" ? "All Issues" : t}
@@ -229,7 +230,7 @@ export default function Dashboard() {
         {/* Pin detail modal - FIXED */}
         {selectedPin && (
           <div 
-            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300 }} 
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 }} 
             onClick={() => setSelectedPin(null)}
           >
             <div 
