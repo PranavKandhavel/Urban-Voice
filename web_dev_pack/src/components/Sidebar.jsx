@@ -7,12 +7,12 @@ const NAV = [
   { icon: "📊", label: "My Complaints",  path: "/my-complaints" },
   { icon: "⚙️", label: "Settings",       path: "/settings" },
 ];
- 
+
 export default function Sidebar({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
- 
+
   return (
     <div style={{
       width: collapsed ? 70 : 224,
@@ -165,7 +165,7 @@ export default function Sidebar({ onLogout }) {
       {/* Logout */}
       <div style={{ padding: collapsed ? "14px 0" : "14px 20px", display: "flex", justifyContent: collapsed ? "center" : "flex-start" }}>
         <button
-          onClick={onLogout}
+          onClick={() => confirm("Are you sure you want to log out?") && onLogout()}
           style={{
             background: "rgba(231,76,60,0.1)",
             border: "1px solid rgba(231,76,60,0.25)",
