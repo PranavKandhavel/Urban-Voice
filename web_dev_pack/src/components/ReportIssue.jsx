@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import API from "../api";
-import { MapContainer, TileLayer, CircleMarker, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 
 const ISSUE_TYPES = [
   { value: "road",        label: "Road Damage",   icon: "🛣️", color: "#E74C3C" },
@@ -15,45 +13,20 @@ const ISSUE_TYPES = [
 
 export default function ReportIssue() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
-  
-  // Guard for authorities
-  if (user.role === "authority") {
-    return <Navigate to="/my-complaints" replace />;
-  }
-
   const [pinPlaced, setPinPlaced] = useState(null);
   const [form, setForm] = useState({ type: "", title: "", location: "", description: "", image: null });
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Handled by MapEvents component now
-  const handleMapClick = async (latlng) => {
-    setPinPlaced({ lat: latlng.lat, lng: latlng.lng });
-    setForm(f => ({ ...f, location: "Locating..." }));
-    
-    try {
-      // Reverse Geocoding using OpenStreetMap Nominatim
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`);
-      const data = await res.json();
-      // Use neighborhood or road if available, else just display the name
-      const place = data.address?.neighbourhood || data.address?.road || data.address?.suburb || data.display_name.split(",")[0];
-      setForm(f => ({ ...f, location: place }));
-    } catch (err) {
-      console.error("Failed to reverse geocode:", err);
-      // Fallback
-      setForm(f => ({ ...f, location: "Coimbatore Location" }));
-    }
+  const handleMapClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setPinPlaced({ x, y });
+    const areas = ["Gandhipuram", "Peelamedu", "RS Puram", "Saibaba Colony", "Hopes College", "Singanallur", "Race Course"];
+    const auto = areas[Math.floor(Math.random() * areas.length)];
+    setForm(f => ({ ...f, location: auto }));
   };
-
-  function MapClickHandler() {
-    useMapEvents({
-      click(e) {
-        handleMapClick(e.latlng);
-      }
-    });
-    return null;
-  }
 
   const validate = () => {
     const e = {};
@@ -80,9 +53,9 @@ export default function ReportIssue() {
     form.type === "streetlight" ? "Streetlight" : "Other");
   formData.append("address", form.location.trim());
   
-  // Use real coords
-  const lat = pinPlaced.lat;
-  const lng = pinPlaced.lng;
+  // Generate coords for Coimbatore area from pin (lat ~10.99, long ~76.96)
+  const lat = 10.99 + (pinPlaced.y / 1000);
+  const lng = 76.96 + (pinPlaced.x / 1000);
   formData.append("latitude", lat);
   formData.append("longitude", lng);
 
@@ -162,44 +135,85 @@ export default function ReportIssue() {
 
         {/* Map half */}
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-          
-          <MapContainer 
-            center={[11.0168, 76.9558]} 
-            zoom={13} 
-            style={{ position: 'absolute', inset: 0, zIndex: 10, width: '100%', height: '100%' }}
-            zoomControl={false}
+          <div style={{
+            position: "absolute", inset: 0,
+            backgroundImage: `
+              linear-gradient(rgba(46,204,113,0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(46,204,113,0.05) 1px, transparent 1px),
+              linear-gradient(rgba(52,152,219,0.02) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(52,152,219,0.02) 1px, transparent 1px)
+            `,
+            backgroundSize: "80px 80px, 80px 80px, 20px 20px, 20px 20px",
+          }} />
+          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
+            <line x1="0" y1="40%" x2="100%" y2="40%" stroke="rgba(127,140,141,0.15)" strokeWidth="10" />
+            <line x1="0" y1="70%" x2="100%" y2="70%" stroke="rgba(127,140,141,0.1)" strokeWidth="7" />
+            <line x1="35%" y1="0" x2="35%" y2="100%" stroke="rgba(127,140,141,0.12)" strokeWidth="8" />
+            <line x1="70%" y1="0" x2="70%" y2="100%" stroke="rgba(127,140,141,0.08)" strokeWidth="5" />
+          </svg>
+
+          {/* Clickable map */}
+          <div
+            style={{
+              position: "absolute", inset: 0,
+              cursor: pinPlaced ? "crosshair" : "pointer",
+            }}
+            onClick={handleMapClick}
           >
-            <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              attribution='&copy; OpenStreetMap contributors & CartoDB'
-            />
-            <MapClickHandler />
-
-            {pinPlaced && (
-               <CircleMarker
-                 center={[pinPlaced.lat, pinPlaced.lng]}
-                 radius={12}
-                 pathOptions={{ 
-                   color: selectedType ? selectedType.color : "#2ECC71", 
-                   fillColor: selectedType ? selectedType.color : "#2ECC71", 
-                   fillOpacity: 0.8, 
-                   weight: 3 
-                 }}
-               />
+            {/* Instruction overlay */}
+            {!pinPlaced && (
+              <div style={{
+                position: "absolute", top: "50%", left: "50%",
+                transform: "translate(-50%, -50%)",
+                textAlign: "center", pointerEvents: "none",
+              }}>
+                <div style={{ fontSize: 48, marginBottom: 12, animation: "bounce 1.5s ease-in-out infinite" }}>📍</div>
+                <div style={{ color: "#3a4560", fontSize: 16, fontWeight: 600 }}>Click anywhere to pin location</div>
+              </div>
             )}
-          </MapContainer>
 
-          {/* Instruction overlay */}
-          {!pinPlaced && (
-            <div style={{
-              position: "absolute", top: "50%", left: "50%",
-              transform: "translate(-50%, -50%)",
-              textAlign: "center", pointerEvents: "none", zIndex: 20
-            }}>
-              <div style={{ fontSize: 48, marginBottom: 12, animation: "bounce 1.5s ease-in-out infinite" }}>📍</div>
-              <div style={{ color: "#3a4560", fontSize: 16, fontWeight: 600 }}>Click anywhere on the map to pin</div>
-            </div>
-          )}
+            {/* Placed pin */}
+            {pinPlaced && (
+              <div style={{
+                position: "absolute",
+                left: pinPlaced.x + "%",
+                top: pinPlaced.y + "%",
+                transform: "translate(-50%, -100%)",
+                pointerEvents: "none",
+              }}>
+                <div style={{
+                  position: "absolute", top: "50%", left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: 50, height: 50, borderRadius: "50%",
+                  background: selectedType ? selectedType.color : "#2ECC71",
+                  opacity: 0.2, animation: "pinPulse 1.5s ease-out infinite",
+                }} />
+                <div style={{
+                  width: 40, height: 40,
+                  borderRadius: "50% 50% 50% 0",
+                  background: selectedType ? selectedType.color : "#2ECC71",
+                  transform: "rotate(-45deg)",
+                  boxShadow: "0 4px 20px " + (selectedType ? selectedType.color : "#2ECC71") + "88",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <span style={{ transform: "rotate(45deg)", fontSize: 18 }}>
+                    {selectedType ? selectedType.icon : "📍"}
+                  </span>
+                </div>
+                <div style={{
+                  position: "absolute", top: "calc(100% + 8px)", left: "50%",
+                  transform: "translateX(-50%)",
+                  background: "rgba(8,16,32,0.9)",
+                  border: "1px solid rgba(46,204,113,0.2)",
+                  borderRadius: 6, padding: "4px 10px",
+                  color: "#2ECC71", fontSize: 11, fontWeight: 600,
+                  whiteSpace: "nowrap",
+                }}>
+                  {form.location || "Location pinned"}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Instruction badge */}
           <div style={{
@@ -207,7 +221,7 @@ export default function ReportIssue() {
             background: "rgba(6,14,28,0.9)",
             border: "1px solid rgba(46,204,113,0.2)",
             borderRadius: 8, padding: "8px 14px",
-            color: "#5a8a70", fontSize: 12, zIndex: 20
+            color: "#5a8a70", fontSize: 12,
           }}>
             {pinPlaced ? `✅ Location pinned · Click to move` : "👆 Click map to pin your location"}
           </div>

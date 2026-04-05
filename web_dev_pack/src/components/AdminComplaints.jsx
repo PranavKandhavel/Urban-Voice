@@ -73,8 +73,7 @@ export default function AdminComplaints() {
   };
 
   const filters = ["All", "Pending", "In Progress", "Resolved"];
-  const filtered = [...(filter === "All" ? complaints : complaints.filter(c => c.status === filter))]
-    .sort((a, b) => (b.upvoteCount || 0) - (a.upvoteCount || 0));
+  const filtered = filter === "All" ? complaints : complaints.filter(c => c.status === filter);
 
   const stats = {
     total: complaints.length,

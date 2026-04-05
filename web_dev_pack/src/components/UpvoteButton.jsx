@@ -11,14 +11,7 @@ export default function UpvoteButton({
   const [upvoted, setUpvoted] = useState(initialUpvoted);
   const [loading, setLoading] = useState(false);
 
-  const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
-  const isAuthority = user.role === "authority";
-
   const handleToggle = async () => {
-    if (isAuthority) {
-      alert("Authorities cannot upvote issues.");
-      return;
-    }
     if (!issueId) {
       console.error('No issueId provided to UpvoteButton');
       return;
@@ -48,21 +41,20 @@ export default function UpvoteButton({
 
   return (
     <button
-      title={isAuthority ? "Authorities cannot upvote issues" : ""}
       onClick={handleToggle}
-      disabled={loading || !issueId || isAuthority}
+      disabled={loading || !issueId}
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: 6,
         padding: '6px 12px',
-        background: upvoted && !isAuthority ? 'rgba(46,204,113,0.2)' : 'rgba(255,255,255,0.1)',
-        border: `1px solid ${upvoted && !isAuthority ? '#2ECC71' : 'rgba(255,255,255,0.2)'}`,
+        background: upvoted ? 'rgba(46,204,113,0.2)' : 'rgba(255,255,255,0.1)',
+        border: `1px solid ${upvoted ? '#2ECC71' : 'rgba(255,255,255,0.2)'}`,
         borderRadius: 20,
-        color: upvoted && !isAuthority ? '#2ECC71' : '#c8d0e0',
+        color: upvoted ? '#2ECC71' : '#c8d0e0',
         fontSize: 12,
         fontWeight: 600,
-        cursor: loading || !issueId || isAuthority ? 'not-allowed' : 'pointer',
+        cursor: loading || !issueId ? 'not-allowed' : 'pointer',
         opacity: loading || !issueId ? 0.6 : 1,
         whiteSpace: 'nowrap',
         transition: 'all 0.2s ease',
