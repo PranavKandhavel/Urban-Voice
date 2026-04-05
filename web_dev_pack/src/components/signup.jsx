@@ -23,7 +23,7 @@ function Signup() {
     setError("");
  
     try {
-      const res = await API.post("/auth/register", {
+      const res = await API.post("/api/auth/register", {
         name: data.name.trim(),
         email: data.email.trim().toLowerCase(),
         phone: data.phone.trim(),

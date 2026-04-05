@@ -91,7 +91,7 @@ export default function ReportIssue() {
   }
 
   try {
-    await API.post("/issues", formData, {
+    await API.post("/api/issues", formData, {
       headers: { "Content-Type": "multipart/form-data" }
     });
 

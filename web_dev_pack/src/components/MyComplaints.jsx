@@ -26,7 +26,7 @@ export default function MyComplaints() {
   useEffect(() => {
 const fetchMyComplaints = async () => {
     try {
-      const res = await API.get("/issues/my");
+      const res = await API.get("/api/issues/my");
       setComplaints(res.data.map(issue => ({
         id: issue._id,
         title: issue.title,

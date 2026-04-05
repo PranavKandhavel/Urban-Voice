@@ -28,7 +28,7 @@ export default function AdminComplaints() {
   useEffect(() => {
     const fetchComplaints = async () => {
       try {
-        const res = await API.get("/issues");
+        const res = await API.get("/api/issues");
         setComplaints(res.data.map(issue => ({
           id: issue._id,
           title: issue.title,

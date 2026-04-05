@@ -57,7 +57,7 @@ export default function Dashboard() {
   const fetchIssues = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await API.get("/issues", { timeout: 30000 });
+      const res = await API.get("/api/issues", { timeout: 30000 });
 
       const issues = res.data.map((issue) => ({
         id: issue._id,
