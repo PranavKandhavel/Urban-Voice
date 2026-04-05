@@ -15,8 +15,8 @@ export default function UpvoteButton({
   const isAuthority = user.role === "authority";
 
   const handleToggle = async () => {
-    if (isAuthority) {
-      alert("Authorities cannot upvote issues.");
+  if (isAuthority) {
+      // UI feedback for authorities
       return;
     }
     if (!issueId) {
@@ -38,9 +38,9 @@ export default function UpvoteButton({
       if (onToggle) {
         onToggle(issueId, data);
       }
-    } catch (error) {
+  } catch (error) {
       console.error('Upvote error:', error);
-      alert('Failed to update upvote. Please try again.');
+      // UI feedback instead of alert
     } finally {
       setLoading(false);
     }

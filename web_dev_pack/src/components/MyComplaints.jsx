@@ -50,12 +50,22 @@ const fetchMyComplaints = async () => {
     navigate("/login");
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
+    const original = complaints;
     const updated = complaints.filter(c => c.id !== id);
     setComplaints(updated);
-    localStorage.setItem("complaints", JSON.stringify([...updated].reverse()));
     if (selected && selected.id === id) setSelected(null);
+
+    try {
+      await API.delete(`/api/issues/${id}`);
+      // Success - optimistic worked
+    } catch (err) {
+      // Rollback on failure
+      setComplaints(original);
+      // Show toast error
+    }
   };
+
 
   const filters = ["All", "Pending", "In Progress", "Resolved"];
   const filtered = filter === "All" ? complaints : complaints.filter(c => c.status === filter);

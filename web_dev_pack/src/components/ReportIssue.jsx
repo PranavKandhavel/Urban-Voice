@@ -97,7 +97,7 @@ export default function ReportIssue() {
 
     setSubmitted(true);
   } catch (err) {
-    alert(err.response?.data?.message || "Failed to submit issue");
+    setErrors({ submit: err.response?.data?.message || "Failed to submit issue" });
   }
 };
 

@@ -10,9 +10,9 @@ const { protect } = require('../middleware/authMiddleware')
 const upload = require('../middleware/uploadMiddleware')
 
 router.get('/', protect, getIssues)
-const Issue = require('../models/Issue.model');
 router.get('/my', protect, async (req, res) => {
   try {
+    const Issue = require('../models/Issue.model');
     const issues = await Issue.find({ reportedBy: req.user._id })
       .populate('reportedBy', 'name')
       .sort({ createdAt: -1 })

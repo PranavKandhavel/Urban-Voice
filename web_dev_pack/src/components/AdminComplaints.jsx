@@ -64,9 +64,9 @@ export default function AdminComplaints() {
 
       setComplaints(complaints.map(c => c.id === id ? { ...c, status: newStatus } : c));
       if (selected && selected.id === id) setSelected({ ...selected, status: newStatus });
-      alert(`Status updated to ${newStatus}`);
+      // Success feedback
     } catch (err) {
-      alert("Failed to update status");
+      // Error feedback
     } finally {
       setUpdating(prev => ({ ...prev, [id]: false }));
     }

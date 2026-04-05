@@ -61,4 +61,43 @@ const getMe = async (req, res) => {
   res.status(200).json(user)
 }
 
-module.exports = { registerUser, loginUser, getMe }
+// @desc Change user password
+// @route PUT /api/auth/change-password
+// @access Private
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password required' })
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' })
+    }
+
+    const user = await User.findById(req.user.id)
+
+    // Check current password
+    const isMatch = await user.matchPassword(currentPassword)
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password incorrect' })
+    }
+
+    // Update password (triggers pre-save hash)
+    user.password = newPassword
+    await user.save()
+
+    // Generate new token
+    const token = generateToken(user._id)
+
+    res.status(200).json({
+      message: 'Password changed successfully',
+      token
+    })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+module.exports = { registerUser, loginUser, getMe, changePassword }

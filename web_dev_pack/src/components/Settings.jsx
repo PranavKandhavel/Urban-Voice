@@ -50,10 +50,18 @@ export default function Settings() {
     }
     setSaving(true);
     try {
+      const res = await API.put('/api/auth/change-password', {
+        currentPassword: passwords.current,
+        newPassword: passwords.new
+      });
+      
+      // Update token and localStorage
+      localStorage.setItem('token', res.data.token);
       showMsg("Password changed successfully!");
       setPasswords({ current: "", new: "", confirm: "" });
     } catch (err) {
-      showMsg("Failed to change password", "error");
+      console.error(err);
+      showMsg(err.response?.data?.message || "Failed to change password", "error");
     } finally {
       setSaving(false);
     }
@@ -76,7 +84,6 @@ export default function Settings() {
   const tabs = [
     { id: "profile", icon: "👤", label: "Profile" },
     { id: "security", icon: "🔒", label: "Security" },
-    { id: "notifications", icon: "🔔", label: "Notifications" },
     { id: "about", icon: "ℹ️", label: "About" },
   ];
  

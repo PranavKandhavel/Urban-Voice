@@ -4,8 +4,6 @@ import Sidebar from "./Sidebar";
 import IssuePin from "./IssuePin";
 import UpvoteButton from "./UpvoteButton";
 
-import IssuePin from "./IssuePin";
-
 import API from "../api";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -55,48 +53,52 @@ export default function Dashboard() {
     ));
   }, []);
 
-  // Fetch issues from backend
-  useEffect(() => {
-    const fetchIssues = async () => {
-      try {
-        setLoading(true);
-        const res = await API.get("/api/issues", { timeout: 30000 });
+// Fetch issues from backend (with polling)
+  const fetchIssues = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await API.get("/api/issues", { timeout: 30000 });
 
-        const issues = res.data.map((issue) => ({
-          id: issue._id,                    // Important: using _id as id
-          type: (issue.category || issue.type || "road").toLowerCase(),
-          title: issue.title,
-          status: issue.status || "Pending",
-          location: issue.location?.address || issue.location || "Unknown",
-          upvoteCount: issue.upvoteCount || 0,
-          userUpvoted: issue.userUpvoted || false,   // Added for upvote state
-          time: new Date(issue.createdAt || Date.now()).toLocaleString(),
-          lat: issue.location?.coordinates?.[1] || (11.0168 + (Math.random() - 0.5) * 0.05),
-          lng: issue.location?.coordinates?.[0] || (76.9558 + (Math.random() - 0.5) * 0.05),
-        }));
+      const issues = res.data.map((issue) => ({
+        id: issue._id,
+        type: issue.category === 'Roads' ? 'road' : (issue.category || issue.type || 'other').toLowerCase(),
+        title: issue.title,
+        status: issue.status || "Pending",
+        location: issue.location?.address || issue.location || "Unknown",
+        upvoteCount: issue.upvoteCount || 0,
+        userUpvoted: issue.userUpvoted || false,
+        time: new Date(issue.createdAt || Date.now()).toLocaleString(),
+        lat: issue.location?.coordinates?.[1] || (11.0168 + (Math.random() - 0.5) * 0.05),
+        lng: issue.location?.coordinates?.[0] || (76.9558 + (Math.random() - 0.5) * 0.05),
+      }));
 
-        setAllIssues(issues.length > 0 ? issues : DEMO_ISSUES);
+      setAllIssues(issues.length > 0 ? issues : DEMO_ISSUES);
 
-        setStats({
-          total: issues.length > 0 ? issues.length : DEMO_ISSUES.length,
-          resolved: issues.length > 0 ? issues.filter(i => i.status === "Resolved").length : 0,
-          pending: issues.length > 0 ? issues.filter(i => i.status === "Pending").length : DEMO_ISSUES.length,
-        });
-      } catch (err) {
-        console.error("Failed to load issues from backend:", err);
-        setAllIssues(DEMO_ISSUES);
-        setStats({
-          total: DEMO_ISSUES.length,
-          resolved: 0,
-          pending: DEMO_ISSUES.length,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchIssues();
+      setStats({
+        total: issues.length > 0 ? issues.length : DEMO_ISSUES.length,
+        resolved: issues.length > 0 ? issues.filter(i => i.status === "Resolved").length : 0,
+        pending: issues.length > 0 ? issues.filter(i => i.status === "Pending").length : DEMO_ISSUES.length,
+      });
+    } catch (err) {
+      console.error("Failed to load issues from backend:", err);
+      setAllIssues(DEMO_ISSUES);
+      setStats({
+        total: DEMO_ISSUES.length,
+        resolved: 0,
+        pending: DEMO_ISSUES.length,
+      });
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchIssues();
+
+    // Poll every 30s
+    const interval = setInterval(fetchIssues, 30000);
+    return () => clearInterval(interval);
+  }, [fetchIssues]);
 
   // Live feed rotation
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function Dashboard() {
 
   const filtered = filterType === "all" 
     ? allIssues 
-    : allIssues.filter((i) => i.type === filterType);
+    : allIssues.filter((i) => i.type === filterType.toLowerCase());
 
   const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
 
@@ -168,10 +170,7 @@ export default function Dashboard() {
           zIndex: 50,
         }}>
           {/* ... your existing top bar code ... */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "7px 14px", width: 240 }}>
-            <span style={{ color: "#3a4560", fontSize: 14 }}>🔍</span>
-            <input placeholder="Search location..." style={{ background: "none", border: "none", outline: "none", color: "#c8d0e0", fontSize: 13, width: "100%" }} />
-          </div>
+          {/* Search bar removed */}
 
           <div style={{ display: "flex", gap: 6 }}>
             {["all", "road", "water", "garbage", "streetlight", "traffic"].map(t => (

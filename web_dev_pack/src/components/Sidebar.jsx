@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 const NAV = [
   { icon: "📍", label: "Nearby Issues",  path: "/dashboard" },
-  { icon: "📝", label: "Report Issue",   path: "/report" },
-  { icon: "📊", label: "My Complaints",  path: "/my-complaints" },
+  { icon: "📝", label: "Report Issue",   path: "/report", adminHide: true },
+  { icon: "📊", label: "My Complaints",  path: "/my-complaints", adminLabel: "Manage Complaints" },
   { icon: "⚙️", label: "Settings",       path: "/settings" },
 ];
 
@@ -12,6 +12,12 @@ export default function Sidebar({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const confirmLogout = () => {
+    onLogout();
+    setShowLogoutConfirm(false);
+  };
 
   return (
     <div style={{
@@ -26,6 +32,76 @@ export default function Sidebar({ onLogout }) {
       position: "relative",
       zIndex: 200,
     }}>
+      {/* Logout Confirm Modal - Fullscreen centered */}
+      {showLogoutConfirm && (
+        <div style={{
+          position: 'fixed', 
+          top: 0, left: 0, width: '100vw', height: '100vh', 
+          background: 'rgba(0,0,0,0.7)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }} onClick={() => setShowLogoutConfirm(false)}>
+          <div style={{
+            background: 'rgba(8,16,32,0.98)', 
+            border: '1px solid rgba(231,76,60,0.4)',
+            borderRadius: 20, 
+            padding: '40px', 
+            minWidth: 380, 
+            maxWidth: '95vw', 
+            maxHeight: '90vh',
+            textAlign: 'center',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.9)',
+            position: 'relative'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 56, marginBottom: 20 }}>🚪</div>
+            <div style={{ color: '#e8eaf0', fontSize: 24, fontWeight: 800, marginBottom: 16 }}>
+              Log out?
+            </div>
+            <div style={{ color: '#b8c0d0', fontSize: 16, lineHeight: 1.5, marginBottom: 36 }}>
+              Are you sure you want to log out? You'll need to log in again to continue.
+            </div>
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  flex: 1, maxWidth: 140, padding: '14px 24px', borderRadius: 12,
+                  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)',
+                  color: '#e8eaf0', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                style={{
+                  flex: 1, maxWidth: 140, padding: '14px 24px', borderRadius: 12,
+                  background: 'rgba(231,76,60,0.2)', border: '1px solid rgba(231,76,60,0.5)',
+                  color: '#E74C3C', fontWeight: 800, fontSize: 14, cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(231,76,60,0.3)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(231,76,60,0.2)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Logo */}
       <div style={{
         padding: collapsed ? "22px 0" : "22px 20px",
@@ -65,7 +141,12 @@ export default function Sidebar({ onLogout }) {
  
       {/* Nav */}
       <nav style={{ flex: 1, padding: "12px 0" }}>
-        {NAV.map((item) => {
+{NAV.map((item) => {
+          const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+          const isAdmin = user.role === 'authority';
+          if (isAdmin && item.adminHide) return null;
+          
+          const label = isAdmin && item.adminLabel ? item.adminLabel : item.label;
           const active = location.pathname === item.path;
           return (
             <div
@@ -103,7 +184,7 @@ export default function Sidebar({ onLogout }) {
                   fontSize: 13, fontWeight: active ? 700 : 600,
                   letterSpacing: 0.3, transition: "color 0.2s",
                 }}>
-                  {item.label}
+                  {label}
                 </span>
               )}
               {/* Active dot indicator */}
@@ -131,7 +212,7 @@ export default function Sidebar({ onLogout }) {
                   transition: "opacity 0.2s",
                   zIndex: 500,
                 }} className="nav-tooltip">
-                  {item.label}
+                  {label}
                 </div>
               )}
             </div>
@@ -165,7 +246,7 @@ export default function Sidebar({ onLogout }) {
       {/* Logout */}
       <div style={{ padding: collapsed ? "14px 0" : "14px 20px", display: "flex", justifyContent: collapsed ? "center" : "flex-start" }}>
         <button
-          onClick={() => confirm("Are you sure you want to log out?") && onLogout()}
+          onClick={() => setShowLogoutConfirm(true)}
           style={{
             background: "rgba(231,76,60,0.1)",
             border: "1px solid rgba(231,76,60,0.25)",
@@ -179,7 +260,7 @@ export default function Sidebar({ onLogout }) {
             fontWeight: 600,
           }}
           onMouseEnter={e => e.currentTarget.style.background = "rgba(231,76,60,0.2)"}
-          onMouseLeave={e => e.currentTarget.style.background = "rgba(231,76,60,0.1)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(231,76,60,0.1)"}  
         >
           <span>🚪</span>
           {!collapsed && <span>Logout</span>}
