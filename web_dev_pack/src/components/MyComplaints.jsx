@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
-import API from "../api"
+import API from "../api";
+import { useTheme } from "../ThemeContext";
 
 const TYPE_CONFIG = {
   garbage:     { color: "#2ECC71", icon: "🗑️", label: "Garbage" },
   water:       { color: "#3498DB", icon: "🚰", label: "Water Leakage" },
   road:        { color: "#E74C3C", icon: "🛣️", label: "Road Damage" },
   streetlight: { color: "#F1C40F", icon: "💡", label: "Streetlight" },
-  traffic:     { color: "#E67E22", icon: "🚦", label: "Traffic" },
+  streetlight: { color: "#F1C40F", icon: "💡", label: "Streetlight" },
+  other:       { color: "#95A5A6", icon: "❓", label: "Other" },
 };
 
 const STATUS_CONFIG = {
@@ -19,6 +21,7 @@ const STATUS_CONFIG = {
 
 export default function MyComplaints() {
   const navigate = useNavigate();
+  const { t } = useTheme();
   const [complaints, setComplaints] = useState([]);
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
@@ -35,7 +38,8 @@ const fetchMyComplaints = async () => {
         status: issue.status,
         time: new Date(issue.createdAt).toLocaleString(),
         description: issue.description,
-        userName: issue.reportedBy?.name || 'You'
+        userName: issue.reportedBy?.name || 'You',
+        photo: issue.photo?.url || null,
       })));
     } catch (err) {
       console.error("Failed to load complaints", err);
@@ -77,7 +81,7 @@ const fetchMyComplaints = async () => {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw", background: "#060e1c", fontFamily: "'Rajdhani', sans-serif" }}>
+    <div style={{ display: "flex", height: "100vh", width: "100vw", background: t.bg, fontFamily: "'Rajdhani', sans-serif" }}>
       <Sidebar onLogout={handleLogout} />
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
@@ -97,8 +101,8 @@ const fetchMyComplaints = async () => {
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
               <div>
-                <div style={{ color: "#e8eaf0", fontSize: 24, fontWeight: 800, letterSpacing: 0.5 }}>My Complaints</div>
-                <div style={{ color: "#3a4560", fontSize: 12, marginTop: 2 }}>Track all your submitted issues</div>
+                <div style={{ color: t.textPrimary, fontSize: 24, fontWeight: 800, letterSpacing: 0.5 }}>My Complaints</div>
+                <div style={{ color: t.textDim, fontSize: 12, marginTop: 2 }}>Track all your submitted issues</div>
               </div>
               <button
                 onClick={() => navigate("/report")}
@@ -124,12 +128,12 @@ const fetchMyComplaints = async () => {
               ].map(s => (
                 <div key={s.label} style={{
                   flex: 1, padding: "10px 14px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: t.bgCard,
+                  border: `1px solid ${t.border}`,
                   borderRadius: 8,
                 }}>
                   <div style={{ color: s.color, fontSize: 22, fontWeight: 800 }}>{s.value}</div>
-                  <div style={{ color: "#3a4560", fontSize: 10, letterSpacing: 0.5 }}>{s.label}</div>
+                  <div style={{ color: t.textMuted, fontSize: 10, letterSpacing: 0.5 }}>{s.label}</div>
                 </div>
               ))}
             </div>
@@ -142,9 +146,9 @@ const fetchMyComplaints = async () => {
                   onClick={() => setFilter(f)}
                   style={{
                     padding: "6px 14px", borderRadius: 20,
-                    border: filter === f ? "1px solid #2ECC71" : "1px solid rgba(255,255,255,0.08)",
-                    background: filter === f ? "rgba(46,204,113,0.15)" : "rgba(255,255,255,0.03)",
-                    color: filter === f ? "#2ECC71" : "#4a5568",
+                    border: filter === f ? "1px solid #2ECC71" : `1px solid ${t.border}`,
+                    background: filter === f ? "rgba(46,204,113,0.15)" : t.bgCard,
+                    color: filter === f ? "#2ECC71" : t.textMuted,
                     fontSize: 11, fontWeight: 600, cursor: "pointer",
                     transition: "all 0.2s",
                   }}
@@ -197,15 +201,15 @@ const fetchMyComplaints = async () => {
                       padding: "14px 16px",
                       marginBottom: 8,
                       borderRadius: 12,
-                      background: isActive ? "rgba(46,204,113,0.08)" : "rgba(255,255,255,0.03)",
-                      border: isActive ? "1px solid rgba(46,204,113,0.2)" : "1px solid rgba(255,255,255,0.06)",
+                      background: isActive ? "rgba(46,204,113,0.08)" : t.bgCard,
+                      border: isActive ? "1px solid rgba(46,204,113,0.2)" : `1px solid ${t.border}`,
                       cursor: "pointer",
                       transition: "all 0.2s",
                       animation: "slideIn 0.3s ease",
                       animationDelay: i * 0.05 + "s",
                     }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = t.bgCardHover; }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = t.bgCard; }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flex: 1 }}>
@@ -219,7 +223,7 @@ const fetchMyComplaints = async () => {
                           {typeCfg.icon}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: "#e8eaf0", fontSize: 14, fontWeight: 700, marginBottom: 2,
+                          <div style={{ color: t.textPrimary, fontSize: 14, fontWeight: 700, marginBottom: 2,
                             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {c.title || "Untitled Issue"}
                           </div>
@@ -227,8 +231,8 @@ const fetchMyComplaints = async () => {
                             <span style={{ color: typeCfg.color, fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}>
                               {typeCfg.label}
                             </span>
-                            <span style={{ color: "#2a3550" }}>·</span>
-                            <span style={{ color: "#4a5568", fontSize: 11 }}>📍 {c.location}</span>
+                            <span style={{ color: t.textDim }}>·</span>
+                            <span style={{ color: t.textMuted, fontSize: 11 }}>📍 {c.location}</span>
                           </div>
                         </div>
                       </div>
@@ -241,7 +245,7 @@ const fetchMyComplaints = async () => {
                         }}>
                           {c.status}
                         </span>
-                        <span style={{ color: "#2a3550", fontSize: 10 }}>{c.time}</span>
+                        <span style={{ color: t.textDim, fontSize: 10 }}>{c.time}</span>
                       </div>
                     </div>
                   </div>
@@ -284,7 +288,7 @@ const fetchMyComplaints = async () => {
                     </div>
                     <div>
                       <div style={{ color: typeCfg.color, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>{typeCfg.label}</div>
-                      <div style={{ color: "#e8eaf0", fontSize: 20, fontWeight: 800 }}>{selected.title}</div>
+                      <div style={{ color: t.textPrimary, fontSize: 20, fontWeight: 800 }}>{selected.title}</div>
                     </div>
                   </div>
 
@@ -308,26 +312,42 @@ const fetchMyComplaints = async () => {
                     ].map(info => (
                       <div key={info.label} style={{
                         padding: "12px 14px",
-                        background: "rgba(255,255,255,0.03)",
-                        border: "1px solid rgba(255,255,255,0.06)",
+                        background: t.bgCard,
+                        border: `1px solid ${t.border}`,
                         borderRadius: 10,
                       }}>
-                        <div style={{ color: "#3a4560", fontSize: 10, letterSpacing: 0.5, marginBottom: 4 }}>{info.icon} {info.label}</div>
-                        <div style={{ color: "#c8d0e0", fontSize: 13, fontWeight: 600 }}>{info.value || "—"}</div>
+                        <div style={{ color: t.textMuted, fontSize: 10, letterSpacing: 0.5, marginBottom: 4 }}>{info.icon} {info.label}</div>
+                        <div style={{ color: t.textSecond, fontSize: 13, fontWeight: 600 }}>{info.value || "—"}</div>
                       </div>
                     ))}
                   </div>
+
+                  {/* Photo */}
+                  {selected.photo && selected.photo !== "https://via.placeholder.com/400x300/2ECC71/ffffff?text=No+Photo" && (
+                    <div style={{
+                      borderRadius: 10, overflow: "hidden",
+                      border: `1px solid ${TYPE_CONFIG[selected.type]?.color || "#2ECC71"}33`,
+                      marginBottom: 16,
+                    }}>
+                      <img
+                        src={selected.photo}
+                        alt="Issue photo"
+                        style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }}
+                        onError={e => e.currentTarget.style.display = "none"}
+                      />
+                    </div>
+                  )}
 
                   {/* Description */}
                   {selected.description && (
                     <div style={{
                       padding: "14px",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: t.bgCard,
+                      border: `1px solid ${t.border}`,
                       borderRadius: 10, marginBottom: 20,
                     }}>
-                      <div style={{ color: "#3a4560", fontSize: 10, letterSpacing: 0.5, marginBottom: 6 }}>📝 Description</div>
-                      <div style={{ color: "#c8d0e0", fontSize: 13, lineHeight: 1.6 }}>{selected.description}</div>
+                      <div style={{ color: t.textMuted, fontSize: 10, letterSpacing: 0.5, marginBottom: 6 }}>📝 Description</div>
+                      <div style={{ color: t.textSecond, fontSize: 13, lineHeight: 1.6 }}>{selected.description}</div>
                     </div>
                   )}
 

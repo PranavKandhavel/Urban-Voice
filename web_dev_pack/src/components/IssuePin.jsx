@@ -6,7 +6,8 @@ const ISSUE_CONFIG = {
   water:       { color: "#3498DB", label: "Water Leakage", icon: "🚰" },
   road:        { color: "#E74C3C", label: "Road Damage",   icon: "🛣️" },
   streetlight: { color: "#F1C40F", label: "Streetlight",   icon: "💡" },
-  traffic:     { color: "#E67E22", label: "Traffic",       icon: "🚦" },
+  streetlight: { color: "#F1C40F", label: "Streetlight",   icon: "💡" },
+  other:       { color: "#95A5A6", label: "Other",         icon: "❓" },
 };
 
 

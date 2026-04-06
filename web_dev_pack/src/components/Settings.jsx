@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import API from "../api";
+import { useTheme } from "../ThemeContext";
  
 export default function Settings() {
   const navigate = useNavigate();
+  const { t } = useTheme();
   const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
-  const [activeTab, setActiveTab] = useState("profile");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.tab === "profile" ? "profile" : "profile");
   const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
   const [profile, setProfile] = useState({ name: user.name || "", email: user.email || "", phone: user.phone || "" });
   const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
@@ -69,15 +72,15 @@ export default function Settings() {
  
   const inputStyle = (err) => ({
     width: "100%", padding: "11px 14px",
-    background: "rgba(255,255,255,0.04)",
-    border: `1px solid ${err ? "#E74C3C" : "rgba(255,255,255,0.1)"}`,
-    borderRadius: 8, color: "#e8eaf0", fontSize: 13,
+    background: t.bgCard,
+    border: `1px solid ${err ? "#E74C3C" : t.border}`,
+    borderRadius: 8, color: t.textPrimary, fontSize: 13,
     outline: "none", fontFamily: "'Rajdhani', sans-serif",
     transition: "border-color 0.2s",
   });
  
   const labelStyle = {
-    color: "#5a6a88", fontSize: 11, letterSpacing: 1,
+    color: t.textMuted, fontSize: 11, letterSpacing: 1,
     textTransform: "uppercase", display: "block", marginBottom: 6, fontWeight: 600,
   };
  
@@ -88,27 +91,27 @@ export default function Settings() {
   ];
  
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw", background: "#060e1c", fontFamily: "'Rajdhani', sans-serif" }}>
+    <div style={{ display: "flex", height: "100vh", width: "100vw", background: t.bg, fontFamily: "'Rajdhani', sans-serif" }}>
       <Sidebar onLogout={handleLogout} />
  
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header */}
         <div style={{
           padding: "20px 32px",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          background: "rgba(8,16,32,0.8)",
+          borderBottom: `1px solid ${t.border}`,
+          background: t.topbar,
           backdropFilter: "blur(12px)",
         }}>
-          <div style={{ color: "#e8eaf0", fontSize: 24, fontWeight: 800, letterSpacing: 0.5 }}>Settings</div>
-          <div style={{ color: "#3a4560", fontSize: 12, marginTop: 2 }}>Manage your account & preferences</div>
+          <div style={{ color: t.textPrimary, fontSize: 24, fontWeight: 800, letterSpacing: 0.5 }}>Settings</div>
+          <div style={{ color: t.textDim, fontSize: 12, marginTop: 2 }}>Manage your account & preferences</div>
         </div>
  
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
           {/* Tabs sidebar */}
           <div style={{
             width: 200,
-            background: "rgba(8,16,32,0.6)",
-            borderRight: "1px solid rgba(255,255,255,0.06)",
+            background: t.sidebar,
+            borderRight: `1px solid ${t.border}`,
             padding: "16px 0",
           }}>
             {tabs.map(tab => (
@@ -125,7 +128,7 @@ export default function Settings() {
                 }}
               >
                 <span style={{ fontSize: 16 }}>{tab.icon}</span>
-                <span style={{ color: activeTab === tab.id ? "#2ECC71" : "#5a6a88", fontSize: 13, fontWeight: activeTab === tab.id ? 700 : 500 }}>
+                <span style={{ color: activeTab === tab.id ? "#2ECC71" : t.textMuted, fontSize: 13, fontWeight: activeTab === tab.id ? 700 : 500 }}>
                   {tab.label}
                 </span>
               </div>
@@ -152,8 +155,8 @@ export default function Settings() {
             {/* Profile Tab */}
             {activeTab === "profile" && (
               <div style={{ maxWidth: 520 }}>
-                <div style={{ color: "#e8eaf0", fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Profile Info</div>
-                <div style={{ color: "#3a4560", fontSize: 12, marginBottom: 28 }}>Update your personal details</div>
+                <div style={{ color: t.textPrimary, fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Profile Info</div>
+                <div style={{ color: t.textDim, fontSize: 12, marginBottom: 28 }}>Update your personal details</div>
  
                 {/* Avatar */}
                 <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
@@ -167,8 +170,8 @@ export default function Settings() {
                     {(profile.name || "U")[0].toUpperCase()}
                   </div>
                   <div>
-                    <div style={{ color: "#e8eaf0", fontSize: 16, fontWeight: 700 }}>{profile.name || "User"}</div>
-                    <div style={{ color: "#3a4560", fontSize: 12 }}>{user.role === "authority" ? "🏛️ Authority" : "👤 Citizen"}</div>
+                    <div style={{ color: t.textPrimary, fontSize: 16, fontWeight: 700 }}>{profile.name || "User"}</div>
+                    <div style={{ color: t.textDim, fontSize: 12 }}>{user.role === "authority" ? "🏛️ Authority" : "👤 Citizen"}</div>
                   </div>
                 </div>
  
@@ -204,9 +207,9 @@ export default function Settings() {
                     <label style={labelStyle}>Role</label>
                     <div style={{
                       padding: "11px 14px",
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      borderRadius: 8, color: "#5a6a88", fontSize: 13,
+                      background: t.bgCard,
+                      border: `1px solid ${t.border}`,
+                      borderRadius: 8, color: t.textMuted, fontSize: 13,
                     }}>
                       {user.role === "authority" ? "Authority / Admin" : "Citizen"}
                     </div>
@@ -233,8 +236,8 @@ export default function Settings() {
             {/* Security Tab */}
             {activeTab === "security" && (
               <div style={{ maxWidth: 520 }}>
-                <div style={{ color: "#e8eaf0", fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Security</div>
-                <div style={{ color: "#3a4560", fontSize: 12, marginBottom: 28 }}>Change your password</div>
+                <div style={{ color: t.textPrimary, fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Security</div>
+                <div style={{ color: t.textDim, fontSize: 12, marginBottom: 28 }}>Change your password</div>
  
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {[
@@ -252,20 +255,20 @@ export default function Settings() {
                           style={{ ...inputStyle(false), paddingRight: 42 }}
                           placeholder="••••••••"
                         />
-                        <button
+                          <button
                           type="button"
                           onClick={() => setShowPass(p => ({ ...p, [key]: !p[key] }))}
                           style={{
                             position: "absolute", right: 12, top: "50%",
                             transform: "translateY(-50%)",
                             background: "none", border: "none",
-                            color: "#3a4560", cursor: "pointer",
+                            color: t.textDim, cursor: "pointer",
                             fontSize: 16, padding: 0,
                             display: "flex", alignItems: "center",
                             transition: "color 0.2s",
                           }}
                           onMouseEnter={e => e.currentTarget.style.color = "#2ECC71"}
-                          onMouseLeave={e => e.currentTarget.style.color = "#3a4560"}
+                          onMouseLeave={e => e.currentTarget.style.color = t.textDim}
                         >
                           {showPass[key] ? "🙈" : "👁️"}
                         </button>
@@ -295,7 +298,7 @@ export default function Settings() {
                   borderRadius: 10,
                 }}>
                   <div style={{ color: "#E74C3C", fontSize: 13, fontWeight: 700, marginBottom: 6 }}>⚠️ Danger Zone</div>
-                  <div style={{ color: "#5a6a88", fontSize: 12, marginBottom: 12 }}>Logging out will clear your session.</div>
+                  <div style={{ color: t.textMuted, fontSize: 12, marginBottom: 12 }}>Logging out will clear your session.</div>
                   <button
                     onClick={handleLogout}
                     style={{
@@ -314,8 +317,8 @@ export default function Settings() {
             {/* Notifications Tab */}
             {activeTab === "notifications" && (
               <div style={{ maxWidth: 520 }}>
-                <div style={{ color: "#e8eaf0", fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Notifications</div>
-                <div style={{ color: "#3a4560", fontSize: 12, marginBottom: 28 }}>Control how you receive alerts</div>
+                <div style={{ color: t.textPrimary, fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Notifications</div>
+                <div style={{ color: t.textDim, fontSize: 12, marginBottom: 28 }}>Control how you receive alerts</div>
  
                 {[
                   { label: "Issue status updates", desc: "Get notified when your issue status changes", def: true },
@@ -328,19 +331,19 @@ export default function Settings() {
                     <div key={i} style={{
                       display: "flex", justifyContent: "space-between", alignItems: "center",
                       padding: "16px 20px", marginBottom: 8,
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: t.bgCard,
+                      border: `1px solid ${t.border}`,
                       borderRadius: 10,
                     }}>
                       <div>
-                        <div style={{ color: "#c8d0e0", fontSize: 13, fontWeight: 600 }}>{item.label}</div>
-                        <div style={{ color: "#3a4560", fontSize: 11, marginTop: 2 }}>{item.desc}</div>
+                        <div style={{ color: t.textSecond, fontSize: 13, fontWeight: 600 }}>{item.label}</div>
+                        <div style={{ color: t.textDim, fontSize: 11, marginTop: 2 }}>{item.desc}</div>
                       </div>
                       <div
                         onClick={() => setOn(!on)}
                         style={{
                           width: 44, height: 24, borderRadius: 12,
-                          background: on ? "#2ECC71" : "rgba(255,255,255,0.1)",
+                          background: on ? "#2ECC71" : t.border,
                           position: "relative", cursor: "pointer",
                           transition: "background 0.3s",
                         }}
@@ -363,8 +366,8 @@ export default function Settings() {
             {/* About Tab */}
             {activeTab === "about" && (
               <div style={{ maxWidth: 520 }}>
-                <div style={{ color: "#e8eaf0", fontSize: 18, fontWeight: 800, marginBottom: 4 }}>About Urban Voice</div>
-                <div style={{ color: "#3a4560", fontSize: 12, marginBottom: 28 }}>Platform information</div>
+                <div style={{ color: t.textPrimary, fontSize: 18, fontWeight: 800, marginBottom: 4 }}>About Urban Voice</div>
+                <div style={{ color: t.textDim, fontSize: 12, marginBottom: 28 }}>Platform information</div>
  
                 <div style={{
                   padding: "24px", borderRadius: 12,
@@ -375,7 +378,7 @@ export default function Settings() {
                 }}>
                   <div style={{ color: "#2ECC71", fontSize: 28, fontWeight: 900, letterSpacing: 2, fontFamily: "'Orbitron', sans-serif" }}>URBAN</div>
                   <div style={{ color: "#3498DB", fontSize: 28, fontWeight: 900, letterSpacing: 2, fontFamily: "'Orbitron', sans-serif", marginTop: -6 }}>VOICE</div>
-                  <div style={{ color: "#5a6a88", fontSize: 12, marginTop: 8 }}>v1.0.0 · Coimbatore Civic Platform</div>
+                  <div style={{ color: t.textMuted, fontSize: 12, marginTop: 8 }}>v1.0.0 · Coimbatore Civic Platform</div>
                 </div>
  
                 {[
@@ -389,10 +392,10 @@ export default function Settings() {
                   <div key={item.label} style={{
                     display: "flex", justifyContent: "space-between",
                     padding: "12px 0",
-                    borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    borderBottom: `1px solid ${t.border}`,
                   }}>
-                    <span style={{ color: "#3a4560", fontSize: 12 }}>{item.label}</span>
-                    <span style={{ color: "#c8d0e0", fontSize: 12, fontWeight: 600 }}>{item.value}</span>
+                    <span style={{ color: t.textDim, fontSize: 12 }}>{item.label}</span>
+                    <span style={{ color: t.textSecond, fontSize: 12, fontWeight: 600 }}>{item.value}</span>
                   </div>
                 ))}
               </div>

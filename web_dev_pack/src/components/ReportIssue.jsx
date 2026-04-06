@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
-import API from "../api";
+import API from "../api"
+import { useTheme } from "../ThemeContext";;
+import { useTheme } from "../ThemeContext";
 import { MapContainer, TileLayer, CircleMarker, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -10,11 +12,12 @@ const ISSUE_TYPES = [
   { value: "water",       label: "Water Leakage", icon: "🚰", color: "#3498DB" },
   { value: "garbage",     label: "Garbage",       icon: "🗑️", color: "#2ECC71" },
   { value: "streetlight", label: "Streetlight",   icon: "💡", color: "#F1C40F" },
-  { value: "traffic",     label: "Traffic",       icon: "🚦", color: "#E67E22" },
+  { value: "other",       label: "Other",         icon: "❓", color: "#95A5A6" },
 ];
 
 export default function ReportIssue() {
   const navigate = useNavigate();
+  const { t } = useTheme();
   const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
   
   // Guard for authorities
@@ -77,7 +80,8 @@ export default function ReportIssue() {
   formData.append("category", form.type === "road" ? "Roads" : 
     form.type === "water" ? "Water" : 
     form.type === "garbage" ? "Garbage" : 
-    form.type === "streetlight" ? "Streetlight" : "Other");
+    form.type === "streetlight" ? "Streetlight" : 
+    form.type === "other" ? "Other" : "Other");
   formData.append("address", form.location.trim());
   
   // Use real coords
@@ -108,7 +112,7 @@ export default function ReportIssue() {
 
   if (submitted) {
     return (
-      <div style={{ display: "flex", height: "100vh", width: "100vw", background: "#060e1c", fontFamily: "'Rajdhani', sans-serif" }}>
+      <div style={{ display: "flex", height: "100vh", width: "100vw", background: t.bg, fontFamily: "'Rajdhani', sans-serif" }}>
         <Sidebar onLogout={handleLogout} />
         <div style={{
           flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
@@ -152,10 +156,10 @@ export default function ReportIssue() {
     );
   }
 
-  const selectedType = ISSUE_TYPES.find(t => t.value === form.type);
+  const selectedType = ISSUE_TYPES.find(type => type.value === form.type);
 
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw", background: "#060e1c", fontFamily: "'Rajdhani', sans-serif" }}>
+    <div style={{ display: "flex", height: "100vh", width: "100vw", background: t.bg, fontFamily: "'Rajdhani', sans-serif" }}>
       <Sidebar onLogout={handleLogout} />
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
@@ -170,7 +174,7 @@ export default function ReportIssue() {
             zoomControl={false}
           >
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              url={theme.bg === "#f0f4f8" ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"}
               attribution='&copy; OpenStreetMap contributors & CartoDB'
             />
             <MapClickHandler />
@@ -197,17 +201,17 @@ export default function ReportIssue() {
               textAlign: "center", pointerEvents: "none", zIndex: 20
             }}>
               <div style={{ fontSize: 48, marginBottom: 12, animation: "bounce 1.5s ease-in-out infinite" }}>📍</div>
-              <div style={{ color: "#3a4560", fontSize: 16, fontWeight: 600 }}>Click anywhere on the map to pin</div>
+              <div style={{ color: theme.textMuted, fontSize: 16, fontWeight: 600 }}>Click anywhere on the map to pin</div>
             </div>
           )}
 
           {/* Instruction badge */}
           <div style={{
             position: "absolute", top: 16, left: 16,
-            background: "rgba(6,14,28,0.9)",
-            border: "1px solid rgba(46,204,113,0.2)",
+            background: theme.bgPanel,
+            border: `1px solid ${theme.borderGreen}`,
             borderRadius: 8, padding: "8px 14px",
-            color: "#5a8a70", fontSize: 12, zIndex: 20
+            color: theme.textMuted, fontSize: 12, zIndex: 20
           }}>
             {pinPlaced ? `✅ Location pinned · Click to move` : "👆 Click map to pin your location"}
           </div>
@@ -216,8 +220,8 @@ export default function ReportIssue() {
         {/* Form panel */}
         <div style={{
           width: 380,
-          background: "rgba(8,16,32,0.97)",
-          borderLeft: "1px solid rgba(46,204,113,0.1)",
+          background: theme.bgPanel,
+          borderLeft: `1px solid ${theme.borderGreen}`,
           display: "flex", flexDirection: "column",
           overflow: "hidden",
         }}>
@@ -229,15 +233,15 @@ export default function ReportIssue() {
             <button
               onClick={() => navigate("/dashboard")}
               style={{
-                background: "none", border: "none", color: "#3a4560",
+                background: "none", border: "none", color: theme.textDim,
                 fontSize: 12, cursor: "pointer", marginBottom: 12,
                 display: "flex", alignItems: "center", gap: 4, padding: 0,
               }}
             >
               ‹ Back to Map
             </button>
-            <div style={{ color: "#e8eaf0", fontSize: 22, fontWeight: 800, letterSpacing: 0.5 }}>Report Issue</div>
-            <div style={{ color: "#3a4560", fontSize: 12, marginTop: 3 }}>Pin location on map, then fill details</div>
+            <div style={{ color: theme.textPrimary, fontSize: 22, fontWeight: 800, letterSpacing: 0.5 }}>Report Issue</div>
+            <div style={{ color: theme.textDim, fontSize: 12, marginTop: 3 }}>Pin location on map, then fill details</div>
           </div>
 
           {/* Form body */}
@@ -245,26 +249,26 @@ export default function ReportIssue() {
 
             {/* Issue type */}
             <div style={{ marginBottom: 20 }}>
-              <label style={{ color: "#5a6a88", fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+              <label style={{ color: theme.textMuted, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
                 Issue Type {errors.type && <span style={{ color: "#E74C3C", marginLeft: 6 }}>{errors.type}</span>}
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {ISSUE_TYPES.map(t => (
                   <div
-                    key={t.value}
-                    onClick={() => { setForm(f => ({ ...f, type: t.value })); setErrors(e => ({ ...e, type: "" })); }}
+                    key={theme.value}
+                    onClick={() => { setForm(f => ({ ...f, type: theme.value })); setErrors(e => ({ ...e, type: "" })); }}
                     style={{
                       padding: "10px 12px",
-                      border: form.type === t.value ? "1px solid " + t.color : "1px solid rgba(255,255,255,0.06)",
+                      border: form.type === theme.value ? "1px solid " + theme.color : `1px solid ${theme.border}`,
                       borderRadius: 10,
-                      background: form.type === t.value ? t.color + "18" : "rgba(255,255,255,0.02)",
+                      background: form.type === theme.value ? theme.color + "18" : theme.bgCard,
                       cursor: "pointer",
                       display: "flex", alignItems: "center", gap: 8,
                       transition: "all 0.2s",
                     }}
                   >
-                    <span style={{ fontSize: 18 }}>{t.icon}</span>
-                    <span style={{ color: form.type === t.value ? t.color : "#5a6a88", fontSize: 12, fontWeight: 600 }}>{t.label}</span>
+                    <span style={{ fontSize: 18 }}>{theme.icon}</span>
+                    <span style={{ color: form.type === theme.value ? theme.color : theme.textMuted, fontSize: 12, fontWeight: 600 }}>{theme.label}</span>
                   </div>
                 ))}
               </div>
@@ -272,18 +276,18 @@ export default function ReportIssue() {
 
             {/* Title */}
             <div style={{ marginBottom: 16 }}>
-              <label style={{ color: "#5a6a88", fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+              <label style={{ color: theme.textMuted, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
                 Title {errors.title && <span style={{ color: "#E74C3C", marginLeft: 6 }}>{errors.title}</span>}
               </label>
               <input
                 placeholder="Brief issue title..."
                 value={form.title}
-                onChange={e => { setForm(f => ({ ...f, title: e.target.value })); setErrors(e2 => ({ ...e2, title: "" })); }}
+                onChange={e => { setForm(f => ({ ...f, title: e.targetheme.value })); setErrors(e2 => ({ ...e2, title: "" })); }}
                 style={{
                   width: "100%", padding: "10px 14px",
-                  background: "rgba(255,255,255,0.04)",
-                  border: errors.title ? "1px solid #E74C3C" : "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 8, color: "#e8eaf0", fontSize: 13,
+                  background: theme.bgCard,
+                  border: errors.title ? "1px solid #E74C3C" : `1px solid ${theme.border}`,
+                  borderRadius: 8, color: theme.textPrimary, fontSize: 13,
                   outline: "none",
                 }}
               />
@@ -291,18 +295,18 @@ export default function ReportIssue() {
 
             {/* Location */}
             <div style={{ marginBottom: 16 }}>
-              <label style={{ color: "#5a6a88", fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+              <label style={{ color: theme.textMuted, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
                 Location {errors.location && <span style={{ color: "#E74C3C", marginLeft: 6 }}>{errors.location}</span>}
               </label>
               <input
                 placeholder="Pin on map to auto-fill, or type..."
                 value={form.location}
-                onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                onChange={e => setForm(f => ({ ...f, location: e.targetheme.value }))}
                 style={{
                   width: "100%", padding: "10px 14px",
-                  background: "rgba(255,255,255,0.04)",
-                  border: errors.location ? "1px solid #E74C3C" : "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 8, color: "#e8eaf0", fontSize: 13,
+                  background: theme.bgCard,
+                  border: errors.location ? "1px solid #E74C3C" : `1px solid ${theme.border}`,
+                  borderRadius: 8, color: theme.textPrimary, fontSize: 13,
                   outline: "none",
                 }}
               />
@@ -310,19 +314,19 @@ export default function ReportIssue() {
 
             {/* Description */}
             <div style={{ marginBottom: 20 }}>
-              <label style={{ color: "#5a6a88", fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+              <label style={{ color: theme.textMuted, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
                 Description
               </label>
               <textarea
                 placeholder="Describe the issue in detail..."
                 value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                onChange={e => setForm(f => ({ ...f, description: e.targetheme.value }))}
                 rows={3}
                 style={{
                   width: "100%", padding: "10px 14px",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 8, color: "#e8eaf0", fontSize: 13,
+                  background: theme.bgCard,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: 8, color: theme.textPrimary, fontSize: 13,
                   outline: "none", resize: "none",
                 }}
               />
@@ -330,32 +334,32 @@ export default function ReportIssue() {
 
             {/* Image upload */}
             <div style={{ marginBottom: 20 }}>
-              <label style={{ color: "#5a6a88", fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+              <label style={{ color: theme.textMuted, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
                 Upload Photo (optional)
               </label>
               <label style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
                 justifyContent: "center", gap: 6,
-                border: "1px dashed rgba(255,255,255,0.12)",
+                border: `1px dashed ${theme.border}`,
                 borderRadius: 8, padding: "20px",
                 cursor: "pointer",
-                background: form.image ? "rgba(46,204,113,0.06)" : "rgba(255,255,255,0.02)",
+                background: form.image ? "rgba(46,204,113,0.06)" : theme.bgCard,
                 transition: "all 0.2s",
               }}>
                 <span style={{ fontSize: 24 }}>{form.image ? "✅" : "📷"}</span>
-                <span style={{ color: "#3a4560", fontSize: 12 }}>
+                <span style={{ color: theme.textDim, fontSize: 12 }}>
                   {form.image ? form.image.name : "Click to upload image"}
                 </span>
                 <input
                   type="file" accept="image/*" style={{ display: "none" }}
-                  onChange={e => setForm(f => ({ ...f, image: e.target.files[0] }))}
+                  onChange={e => setForm(f => ({ ...f, image: e.targetheme.files[0] }))}
                 />
               </label>
             </div>
           </div>
 
           {/* Submit */}
-          <div style={{ padding: "16px 24px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ padding: "16px 24px", borderTop: `1px solid ${theme.border}` }}>
             <button
               onClick={handleSubmit}
               style={{
@@ -367,8 +371,8 @@ export default function ReportIssue() {
                 boxShadow: "0 4px 20px rgba(46,204,113,0.3)",
                 transition: "transform 0.2s",
               }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-1px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+              onMouseEnter={e => e.currentTargetheme.style.transform = "translateY(-1px)"}
+              onMouseLeave={e => e.currentTargetheme.style.transform = "translateY(0)"}
             >
               Submit Report
             </button>
@@ -381,7 +385,7 @@ export default function ReportIssue() {
         @keyframes pinPulse { 0% { transform: translate(-50%,-50%) scale(1); opacity: 0.4; } 100% { transform: translate(-50%,-50%) scale(2.5); opacity: 0; } }
         @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         * { box-sizing: border-box; }
-        textarea::placeholder, input::placeholder { color: #2a3550; }
+        textarea::placeholder, input::placeholder { color: ${theme.textDim}; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: rgba(46,204,113,0.2); border-radius: 4px; }
       `}</style>

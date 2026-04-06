@@ -8,7 +8,7 @@ const TYPE_CONFIG = {
   water:       { color: "#3498DB", icon: "🚰", label: "Water Leakage" },
   road:        { color: "#E74C3C", icon: "🛣️", label: "Road Damage" },
   streetlight: { color: "#F1C40F", icon: "💡", label: "Streetlight" },
-  traffic:     { color: "#E67E22", icon: "🚦", label: "Traffic" },
+  other:       { color: "#95A5A6", icon: "❓", label: "Other" },
 };
 
 const STATUS_CONFIG = {
@@ -32,7 +32,7 @@ export default function AdminComplaints() {
         setComplaints(res.data.map(issue => ({
           id: issue._id,
           title: issue.title,
-          type: (issue.category || "road").toLowerCase(),
+          type: (issue.category === 'Traffic' || issue.category === 'Other') ? 'other' : (issue.category || "road").toLowerCase(),
           location: issue.location?.address || "Unknown",
           status: issue.status || "Pending",
           time: new Date(issue.createdAt).toLocaleString(),
