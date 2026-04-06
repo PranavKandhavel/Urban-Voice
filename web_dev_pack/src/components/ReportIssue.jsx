@@ -3,7 +3,6 @@ import { Navigate, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import API from "../api"
 import { useTheme } from "../ThemeContext";;
-import { useTheme } from "../ThemeContext";
 import { MapContainer, TileLayer, CircleMarker, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
