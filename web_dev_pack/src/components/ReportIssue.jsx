@@ -17,6 +17,7 @@ const ISSUE_TYPES = [
 export default function ReportIssue() {
   const navigate = useNavigate();
   const { t } = useTheme();
+  const theme = t;
   const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
   
   // Guard for authorities
@@ -252,22 +253,22 @@ export default function ReportIssue() {
                 Issue Type {errors.type && <span style={{ color: "#E74C3C", marginLeft: 6 }}>{errors.type}</span>}
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {ISSUE_TYPES.map(t => (
+                {ISSUE_TYPES.map(typeItem => (
                   <div
-                    key={theme.value}
-                    onClick={() => { setForm(f => ({ ...f, type: theme.value })); setErrors(e => ({ ...e, type: "" })); }}
+                    key={typeItem.value}
+                    onClick={() => { setForm(f => ({ ...f, type: typeItem.value })); setErrors(e => ({ ...e, type: "" })); }}
                     style={{
                       padding: "10px 12px",
-                      border: form.type === theme.value ? "1px solid " + theme.color : `1px solid ${theme.border}`,
+                      border: form.type === typeItem.value ? "1px solid " + typeItem.color : `1px solid ${theme.border}`,
                       borderRadius: 10,
-                      background: form.type === theme.value ? theme.color + "18" : theme.bgCard,
+                      background: form.type === typeItem.value ? typeItem.color + "18" : theme.bgCard,
                       cursor: "pointer",
                       display: "flex", alignItems: "center", gap: 8,
                       transition: "all 0.2s",
                     }}
                   >
-                    <span style={{ fontSize: 18 }}>{theme.icon}</span>
-                    <span style={{ color: form.type === theme.value ? theme.color : theme.textMuted, fontSize: 12, fontWeight: 600 }}>{theme.label}</span>
+                    <span style={{ fontSize: 18 }}>{typeItem.icon}</span>
+                    <span style={{ color: form.type === typeItem.value ? typeItem.color : theme.textMuted, fontSize: 12, fontWeight: 600 }}>{typeItem.label}</span>
                   </div>
                 ))}
               </div>
@@ -281,7 +282,7 @@ export default function ReportIssue() {
               <input
                 placeholder="Brief issue title..."
                 value={form.title}
-                onChange={e => { setForm(f => ({ ...f, title: e.targetheme.value })); setErrors(e2 => ({ ...e2, title: "" })); }}
+                onChange={e => { setForm(f => ({ ...f, title: e.target.value })); setErrors(e2 => ({ ...e2, title: "" })); }}
                 style={{
                   width: "100%", padding: "10px 14px",
                   background: theme.bgCard,
@@ -300,7 +301,7 @@ export default function ReportIssue() {
               <input
                 placeholder="Pin on map to auto-fill, or type..."
                 value={form.location}
-                onChange={e => setForm(f => ({ ...f, location: e.targetheme.value }))}
+                onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
                 style={{
                   width: "100%", padding: "10px 14px",
                   background: theme.bgCard,
@@ -319,7 +320,7 @@ export default function ReportIssue() {
               <textarea
                 placeholder="Describe the issue in detail..."
                 value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.targetheme.value }))}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 rows={3}
                 style={{
                   width: "100%", padding: "10px 14px",
@@ -351,7 +352,7 @@ export default function ReportIssue() {
                 </span>
                 <input
                   type="file" accept="image/*" style={{ display: "none" }}
-                  onChange={e => setForm(f => ({ ...f, image: e.targetheme.files[0] }))}
+                  onChange={e => setForm(f => ({ ...f, image: e.target.files[0] }))}
                 />
               </label>
             </div>
@@ -370,8 +371,8 @@ export default function ReportIssue() {
                 boxShadow: "0 4px 20px rgba(46,204,113,0.3)",
                 transition: "transform 0.2s",
               }}
-              onMouseEnter={e => e.currentTargetheme.style.transform = "translateY(-1px)"}
-              onMouseLeave={e => e.currentTargetheme.style.transform = "translateY(0)"}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-1px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
             >
               Submit Report
             </button>
